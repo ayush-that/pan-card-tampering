@@ -16,7 +16,7 @@ jobs:
       - name: Set up Conda
         uses: goanpeca/setup-miniconda@v2
         with:
-          python-version: '3.8'
+          python-version: '3.7'
           use-mamba: true
 
       - name: Create Conda environment

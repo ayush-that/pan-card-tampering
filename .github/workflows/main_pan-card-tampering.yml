@@ -1,43 +1,62 @@
-name: Deploy to Azure Web App
+name: Build and deploy Python app to Azure Web App - pan-card-tampering
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-update-conda: true
-          python-version: 3.8
-          environment-file: environment.yml
+          auto-activate-base: false
           activate-environment: myenv
-
-      - name: Update Conda
-        run: conda update -n base -c defaults conda
+          python-version: "3.8"
 
       - name: Install dependencies
+        shell: bash -l {0}
         run: |
-          conda activate myenv
-          python -m pip install -r requirements.txt
+          conda env update --file environment.yml --name myenv
+          pip install -r requirements.txt
 
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
         with:
-          app-name: <your-app-name>
-          slot-name: production
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: .
+          name: python-app
+          path: |
+            release.zip
+            !myenv/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: "Production"
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+
+      - name: "Deploy to Azure Web App"
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: "pan-card-tampering"
+          slot-name: "Production"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C0B6E453E4CE4102BA1F4FEE7E967A27 }}

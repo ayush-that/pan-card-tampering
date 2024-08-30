@@ -16,7 +16,7 @@ jobs:
       - name: Set up Conda
         uses: goanpeca/setup-miniconda@v2
         with:
-          python-version: "3.8"
+          python-version: '3.8'
           use-mamba: true
 
       - name: Create Conda environment
@@ -27,11 +27,8 @@ jobs:
           source /usr/share/miniconda/etc/profile.d/conda.sh
           conda activate myenv
 
-      - name: Install dependencies via Conda
-        run: conda install --name myenv -c conda-forge --file conda-requirements.txt -y
-
-      - name: Install pip dependencies
-        run: pip install -r pip-requirements.txt
+      - name: Install dependencies via pip
+        run: pip install -r requirements.txt
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -48,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: "Production"
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
@@ -60,10 +57,10 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      - name: "Deploy to Azure Web App"
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: "pan-card-tampering"
-          slot-name: "Production"
+          app-name: 'pan-card-tampering'
+          slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C0B6E453E4CE4102BA1F4FEE7E967A27 }}

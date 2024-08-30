@@ -17,19 +17,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python version
-        uses: actions/setup-python@v5
+      - name: Set up Conda
+        uses: goanpeca/setup-miniconda@v2
         with:
-          python-version: '3.12'
+          auto-update-conda: true
+          python-version: "3.12"
+          activate-environment: myenv
+          environment-file: environment.yml # Optional if you have an environment file
+          use-mamba: true # Optional for faster package installs
 
-      - name: Create and start virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-      
+      - name: Create Conda environment
+        run: conda create --name myenv python=3.12 -y
+
+      - name: Activate Conda environment
+        run: conda activate myenv
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
-        
+        run: conda install --file requirements.txt
+
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
@@ -41,15 +46,15 @@ jobs:
           name: python-app
           path: |
             release.zip
-            !venv/
+            !myenv/
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
+      name: "Production"
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
@@ -59,11 +64,10 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
-      - name: 'Deploy to Azure Web App'
+      - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'pan-card-tampering'
-          slot-name: 'Production'
+          app-name: "pan-card-tampering"
+          slot-name: "Production"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C0B6E453E4CE4102BA1F4FEE7E967A27 }}

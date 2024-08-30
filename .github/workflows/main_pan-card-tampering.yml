@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: "3.9"
 
       - name: Create and start virtual environment
         run: |
@@ -24,7 +24,9 @@ jobs:
           source venv/bin/activate
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -60,3 +62,9 @@ jobs:
           app-name: "pan-card-tampering"
           slot-name: "Production"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C0B6E453E4CE4102BA1F4FEE7E967A27 }}
+
+      - name: "Check deployment status"
+        if: failure()
+        run: |
+          echo "Deployment failed. Checking logs..."
+          curl -u ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} https://${{ secrets.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/deployments
